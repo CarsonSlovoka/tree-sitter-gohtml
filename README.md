@@ -103,7 +103,7 @@ make dist
 
 ```vim
 :TSInstallGohtml
-:TSInstallGohtml v0.1.0
+:TSInstallGohtml v0.1.1
 ```
 
 會依 `uname` 選資產，寫入插件目錄的 `parser/gohtml.so`（Windows 為 `.dll`）。需要 `curl`。若 GitHub API 有速率限制，可設環境變數 `GITHUB_TOKEN` 或 `GH_TOKEN`。
@@ -234,8 +234,8 @@ make compile
 發版：
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 需要 `contents: write`（預設 `GITHUB_TOKEN` 在同倉庫 Release 足夠）。Linux arm64 使用 `ubuntu-24.04-arm`（public repo 的標準 ARM runner）
