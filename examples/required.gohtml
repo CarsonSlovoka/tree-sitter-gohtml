@@ -1,0 +1,12 @@
+<h1>{{.Title}}</h1>
+<div class="{{.Class}}">{{.Name}}</div>
+{{if .User}}<p>{{.User.Name}}</p>{{else}}<p>Guest</p>{{end}}
+{{range .Items}}<li>{{.}}</li>{{end}}
+{{- /* note */ -}}
+<!-- keep hidden -->
+<script type="text/javascript">
+  var x = {{.Count}};
+</script>
+<style type="text/css">
+  h1 { color: {{.Color}}; }
+</style>

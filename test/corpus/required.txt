@@ -1,0 +1,135 @@
+================================================================================
+title field in heading
+================================================================================
+<h1>{{.Title}}</h1>
+--------------------------------------------------------------------------------
+(document
+  (element
+    (start_tag
+      (tag_name))
+    (pipeline_action
+      (chained_pipeline
+        (field)))
+    (end_tag
+      (tag_name))))
+
+================================================================================
+template in attribute and text
+================================================================================
+<div class="{{.Class}}">{{.Name}}</div>
+--------------------------------------------------------------------------------
+(document
+  (element
+    (start_tag
+      (tag_name)
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (pipeline_action
+            (chained_pipeline
+              (field))))))
+    (pipeline_action
+      (chained_pipeline
+        (field)))
+    (end_tag
+      (tag_name))))
+
+================================================================================
+if else wrapping elements
+================================================================================
+{{if .User}}<p>{{.User.Name}}</p>{{else}}<p>Guest</p>{{end}}
+--------------------------------------------------------------------------------
+(document
+  (if_action
+    (if_clause
+      (chained_pipeline
+        (field)))
+    (element
+      (start_tag
+        (tag_name))
+      (pipeline_action
+        (chained_pipeline
+          (selector_expression
+            (field)
+            (field))))
+      (end_tag
+        (tag_name)))
+    (else_clause
+      (element
+        (start_tag
+          (tag_name))
+        (text)
+        (end_tag
+          (tag_name))))
+    (end_clause)))
+
+================================================================================
+range wrapping list items
+================================================================================
+{{range .Items}}<li>{{.}}</li>{{end}}
+--------------------------------------------------------------------------------
+(document
+  (range_action
+    (range_clause
+      (chained_pipeline
+        (field)))
+    (element
+      (start_tag
+        (tag_name))
+      (pipeline_action
+        (chained_pipeline
+          (dot)))
+      (end_tag
+        (tag_name)))
+    (end_clause)))
+
+================================================================================
+trimmed template comment
+================================================================================
+{{- /* note */ -}}
+--------------------------------------------------------------------------------
+(document
+  (comment_action
+    (template_comment)))
+
+================================================================================
+html comment script style
+================================================================================
+<!-- keep -->
+<script type="text/javascript">
+  var x = 1;
+</script>
+<style type="text/css">
+  h1 { color: red; }
+</style>
+<p>ok</p>
+--------------------------------------------------------------------------------
+(document
+  (comment
+    (comment_text))
+  (script_element
+    (start_tag
+      (tag_name)
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (attribute_text))))
+    (raw_text)
+    (end_tag
+      (tag_name)))
+  (style_element
+    (start_tag
+      (tag_name)
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (attribute_text))))
+    (raw_text)
+    (end_tag
+      (tag_name)))
+  (element
+    (start_tag
+      (tag_name))
+    (text)
+    (end_tag
+      (tag_name))))

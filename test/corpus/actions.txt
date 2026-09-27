@@ -1,0 +1,171 @@
+================================================================================
+else if and else
+================================================================================
+{{if .A}}<a></a>{{else if .B}}<b></b>{{else}}<c></c>{{end}}
+--------------------------------------------------------------------------------
+(document
+  (if_action
+    (if_clause
+      (chained_pipeline
+        (field)))
+    (element
+      (start_tag
+        (tag_name))
+      (end_tag
+        (tag_name)))
+    (else_if_clause
+      (chained_pipeline
+        (field))
+      (element
+        (start_tag
+          (tag_name))
+        (end_tag
+          (tag_name))))
+    (else_clause
+      (element
+        (start_tag
+          (tag_name))
+        (end_tag
+          (tag_name))))
+    (end_clause)))
+
+================================================================================
+with and range assignment
+================================================================================
+{{with .User}}<span>{{.Name}}</span>{{end}}
+{{range $i, $item := .Items}}<li>{{$i}} {{$item}}</li>{{end}}
+--------------------------------------------------------------------------------
+(document
+  (with_action
+    (with_clause
+      (chained_pipeline
+        (field)))
+    (element
+      (start_tag
+        (tag_name))
+      (pipeline_action
+        (chained_pipeline
+          (field)))
+      (end_tag
+        (tag_name)))
+    (end_clause))
+  (range_action
+    (range_clause
+      (assignment
+        (variable)
+        (variable)
+        (chained_pipeline
+          (field))))
+    (element
+      (start_tag
+        (tag_name))
+      (pipeline_action
+        (chained_pipeline
+          (variable)))
+      (pipeline_action
+        (chained_pipeline
+          (variable)))
+      (end_tag
+        (tag_name)))
+    (end_clause)))
+
+================================================================================
+define block template
+================================================================================
+{{define "card"}}<div>{{.}}</div>{{end}}
+{{block "nav" .}}<nav></nav>{{end}}
+{{template "card" .Item}}
+--------------------------------------------------------------------------------
+(document
+  (define_action
+    (define_clause
+      (interpreted_string_literal
+        (string_content)))
+    (element
+      (start_tag
+        (tag_name))
+      (pipeline_action
+        (chained_pipeline
+          (dot)))
+      (end_tag
+        (tag_name)))
+    (end_clause))
+  (block_action
+    (block_clause
+      (interpreted_string_literal
+        (string_content))
+      (chained_pipeline
+        (dot)))
+    (element
+      (start_tag
+        (tag_name))
+      (end_tag
+        (tag_name)))
+    (end_clause))
+  (template_action
+    (interpreted_string_literal
+      (string_content))
+    (chained_pipeline
+      (field))))
+
+================================================================================
+pipeline functions and trim markers
+================================================================================
+{{- printf "%s" .Name | html -}}
+--------------------------------------------------------------------------------
+(document
+  (pipeline_action
+    (chained_pipeline
+      (function_call
+        function: (identifier)
+        (interpreted_string_literal
+          (string_content))
+        (field))
+      (identifier))))
+
+================================================================================
+template inside start tag
+================================================================================
+<div {{if .X}}class="on"{{end}} id="n">x</div>
+--------------------------------------------------------------------------------
+(document
+  (element
+    (start_tag
+      (tag_name)
+      (if_clause
+        (chained_pipeline
+          (field)))
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (attribute_text)))
+      (end_clause)
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (attribute_text))))
+    (text)
+    (end_tag
+      (tag_name))))
+
+================================================================================
+self closing and doctype
+================================================================================
+<!DOCTYPE html>
+<img src="{{.URL}}" alt="x"/>
+--------------------------------------------------------------------------------
+(document
+  (doctype)
+  (element
+    (self_closing_tag
+      (tag_name)
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (pipeline_action
+            (chained_pipeline
+              (field)))))
+      (attribute
+        (attribute_name)
+        (quoted_attribute_value
+          (attribute_text))))))

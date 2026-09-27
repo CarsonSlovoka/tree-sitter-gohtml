@@ -1,0 +1,10 @@
+node_modules/
+parser/*.so
+parser/*.dylib
+parser/*.dll
+src/*.o
+.tests/
+build/
+target/
+*.wasm
+package-lock.json

@@ -1,0 +1,36 @@
+{
+  "name": "tree-sitter-gohtml",
+  "version": "0.1.0",
+  "description": "Tree-sitter grammar for HTML files with Go html/template and text/template actions",
+  "license": "MIT",
+  "author": {
+    "name": "Carson Tseng",
+    "email": "jackparadise520a@gmail.com",
+    "url": ""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CarsonSlovoka/tree-sitter-gohtml"
+  },
+  "main": "bindings/node",
+  "keywords": [
+    "tree-sitter",
+    "go",
+    "html",
+    "template",
+    "gohtml",
+    "neovim"
+  ],
+  "tree-sitter": [
+    {
+      "scope": "text.html.gohtml",
+      "file-types": [
+        "gohtml"
+      ],
+      "highlights": [
+        "queries/gohtml/highlights.scm"
+      ],
+      "injection-regex": "gohtml"
+    }
+  ]
+}

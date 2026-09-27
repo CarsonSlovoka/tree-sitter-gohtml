@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{{.Title}}</title>
+    <style>
+      body { background: {{.Bg}}; }
+    </style>
+  </head>
+  <body class="{{.Class}}" {{if .Wide}}data-wide="1"{{end}}>
+    <!-- {{.Hidden}} stays a template inside the HTML comment -->
+    {{define "item"}}<li>{{.}}</li>{{end}}
+    {{block "list" .}}
+      <ul>
+        {{range $i, $item := .Items}}
+          <li data-i="{{$i}}">{{$item | html}}</li>
+        {{else}}
+          <li>empty</li>
+        {{end}}
+      </ul>
+    {{end}}
+    {{if .User}}
+      <p>{{.User.Name}}</p>
+    {{else if .Guest}}
+      <p>named guest</p>
+    {{else}}
+      <p>Guest</p>
+    {{end}}
+    {{- /* note */ -}}
+    <script>
+      window.count = {{.Count}};
+    </script>
+  </body>
+</html>

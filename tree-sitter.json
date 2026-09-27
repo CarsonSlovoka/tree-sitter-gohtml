@@ -1,0 +1,32 @@
+{
+  "grammars": [
+    {
+      "name": "gohtml",
+      "camelcase": "Gohtml",
+      "scope": "text.html.gohtml",
+      "path": ".",
+      "file-types": [
+        "gohtml"
+      ],
+      "highlights": "queries/gohtml/highlights.scm",
+      "injections": "queries/gohtml/injections.scm",
+      "injection-regex": "gohtml"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "HTML + Go html/template grammar for tree-sitter",
+    "links": {
+      "repository": "https://github.com/CarsonSlovoka/tree-sitter-gohtml"
+    }
+  },
+  "bindings": {
+    "c": false,
+    "go": false,
+    "node": false,
+    "python": false,
+    "rust": false,
+    "swift": false
+  }
+}
