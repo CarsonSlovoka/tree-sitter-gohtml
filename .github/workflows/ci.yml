@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: generate + corpus (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up tree-sitter CLI
+        uses: tree-sitter/setup-action/cli@v2
+
+      - name: Regenerate and check committed parser sources
+        shell: bash
+        run: |
+          tree-sitter generate
+          git diff --exit-code -- src/parser.c src/grammar.json src/node-types.json \
+            || { echo "src/ is stale; run tree-sitter generate and commit" >&2; exit 1; }
+
+      - name: Corpus + query sanity
+        run: make test
+
+      - name: Highlight captures
+        run: make highlight-check
+
+      - name: Compile native parser
+        run: make compile

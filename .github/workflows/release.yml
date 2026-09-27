@@ -1,0 +1,168 @@
+name: Release
+
+# Push a version tag (v1.2.3) or run this workflow manually against an existing tag.
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing git tag to publish (e.g. v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: test before publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - uses: tree-sitter/setup-action/cli@v2
+
+      - name: Regenerate and check committed parser sources
+        run: |
+          tree-sitter generate
+          git diff --exit-code -- src/parser.c src/grammar.json src/node-types.json
+
+      - run: make test
+      - run: make highlight-check
+
+  build:
+    name: build ${{ matrix.platform }}
+    needs: test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+            ext: so
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            ext: so
+          - os: macos-latest
+            platform: darwin-arm64
+            ext: so
+          - os: macos-15-intel
+            platform: darwin-x86_64
+            ext: so
+          - os: ubuntu-latest
+            platform: windows-x86_64
+            ext: dll
+            cc: x86_64-w64-mingw32-gcc
+            packages: gcc-mingw-w64-x86-64
+          # Public-repo ARM runner; treat as best-effort (no MinGW ARM toolchain guaranteed).
+          - os: windows-11-arm
+            platform: windows-arm64
+            ext: dll
+            optional: true
+    continue-on-error: ${{ matrix.optional == true }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Install cross compiler
+        if: matrix.packages != ''
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.packages }}
+
+      - name: Compile parser
+        shell: bash
+        env:
+          GOHTML_PLATFORM: ${{ matrix.platform }}
+          CC: ${{ matrix.cc || 'cc' }}
+        run: |
+          if [[ -z "${{ matrix.cc }}" ]]; then
+            if command -v cc >/dev/null 2>&1; then export CC=cc
+            elif command -v clang >/dev/null 2>&1; then export CC=clang
+            elif command -v gcc >/dev/null 2>&1; then export CC=gcc
+            else
+              echo "no C compiler on runner" >&2
+              exit 1
+            fi
+          fi
+          chmod +x scripts/build-parser.sh
+          scripts/build-parser.sh dist
+          ls -la dist
+          test -f "dist/parser-gohtml-${GOHTML_PLATFORM}.${{ matrix.ext }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: parser-${{ matrix.platform }}
+          path: dist/parser-gohtml-${{ matrix.platform }}.${{ matrix.ext }}
+          if-no-files-found: error
+
+  publish:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
+      - name: Download all parser artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          ls -la
+          sha256sum parser-gohtml-* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Resolve tag
+        id: meta
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: ${{ steps.meta.outputs.tag }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          body: |
+            預編譯 Tree-sitter parser（Neovim 放到 `parser/gohtml.so`，Windows 為 `parser/gohtml.dll`）。
+
+            | 平台 | Release 資產 | 安裝後檔名 |
+            |---|---|---|
+            | Linux x86_64 | `parser-gohtml-linux-x86_64.so` | `gohtml.so` |
+            | Linux arm64 | `parser-gohtml-linux-arm64.so` | `gohtml.so` |
+            | macOS Apple Silicon | `parser-gohtml-darwin-arm64.so` | `gohtml.so` |
+            | macOS Intel | `parser-gohtml-darwin-x86_64.so` | `gohtml.so` |
+            | Windows x86_64 | `parser-gohtml-windows-x86_64.dll` | `gohtml.dll` |
+            | Windows ARM64 | `parser-gohtml-windows-arm64.dll` | `gohtml.dll` |
+
+            Linux / macOS 範例：
+
+            ```bash
+            mkdir -p ~/.local/share/nvim/site/parser
+            curl -fsSL -o ~/.local/share/nvim/site/parser/gohtml.so \
+              https://github.com/CarsonSlovoka/tree-sitter-gohtml/releases/download/${{ steps.meta.outputs.tag }}/parser-gohtml-linux-x86_64.so
+            ```
+
+            在 Neovim 裡也可以執行 `:TSInstallGohtml`（自動對應目前平台並下載 latest）。
+          files: |
+            dist/parser-gohtml-*
+            dist/SHA256SUMS

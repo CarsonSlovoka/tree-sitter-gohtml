@@ -21,12 +21,13 @@ INSTALL_PARSER := $(PREFIX)/parser/gohtml.so
 INSTALL_QUERIES := $(PREFIX)/queries/gohtml
 INSTALL_PLUGIN := $(PREFIX)/pack/gohtml/start/tree-sitter-gohtml
 
-.PHONY: all generate compile test highlight-check install install-plugin uninstall clean help
+.PHONY: all generate compile test highlight-check dist install install-plugin uninstall clean help
 
 help:
 	@echo "Targets:"
 	@echo "  generate          tree-sitter generate (writes src/parser.c)"
 	@echo "  compile           compile parser/gohtml.so"
+	@echo "  dist              compile a platform-named Release asset into dist/"
 	@echo "  test              tree-sitter corpus + query sanity"
 	@echo "  highlight-check   parse required examples and dump highlight captures"
 	@echo "  install           copy parser + queries into PREFIX ($(PREFIX))"
@@ -48,6 +49,10 @@ $(PARSER): $(SRC)
 	$(CC) $(CFLAGS) $(LINKFLAGS) -o $@ $(SRC)
 
 compile: $(PARSER)
+
+# Named like GitHub Release assets: dist/parser-gohtml-<os>-<arch>.so
+dist: $(SRC)
+	@bash scripts/build-parser.sh dist
 
 test: $(SRC)
 	$(TS) test
@@ -86,3 +91,4 @@ uninstall:
 
 clean:
 	rm -f "$(PARSER)" src/*.o
+	rm -rf dist

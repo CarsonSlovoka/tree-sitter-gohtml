@@ -21,3 +21,19 @@ vim.api.nvim_create_user_command('TSBuildGohtml', function()
     vim.notify('gohtml build failed: ' .. msg, vim.log.levels.ERROR)
   end
 end, { desc = 'Compile parser/gohtml.so from src/parser.c' })
+
+vim.api.nvim_create_user_command('TSInstallGohtml', function(opts)
+  local tag = opts.args
+  if tag == '' then
+    tag = nil
+  end
+  local ok, msg = require('gohtml.install').download({ tag = tag })
+  if ok then
+    vim.notify('gohtml: ' .. msg, vim.log.levels.INFO)
+  else
+    vim.notify('gohtml install failed: ' .. msg, vim.log.levels.ERROR)
+  end
+end, {
+  nargs = '?',
+  desc = 'Download prebuilt parser from GitHub Releases (optional tag, default latest)',
+})

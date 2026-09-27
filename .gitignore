@@ -5,6 +5,7 @@ parser/*.dll
 src/*.o
 .tests/
 build/
+dist/
 target/
 *.wasm
 package-lock.json

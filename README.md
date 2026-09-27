@@ -69,6 +69,92 @@ make highlight-check
 
 `make compile` 在 Linux 用 `-shared`，在 macOS 用 `-dynamiclib -undefined dynamic_lookup`，輸出都是 `parser/gohtml.so`
 
+本機若要產出與 GitHub Release 相同檔名的資產：
+
+```bash
+make dist
+# dist/parser-gohtml-<os>-<arch>.so  （Windows 為 .dll）
+```
+
+## 預編譯 parser（不必本機編譯）
+
+打 `vX.Y.Z` tag 後，GitHub Actions 會建 Release，並上傳各平台動態連結庫。資產檔名：
+
+| 平台 | Release 資產 | 放到 Neovim 後的檔名 |
+|---|---|---|
+| Linux x86_64 | `parser-gohtml-linux-x86_64.so` | `parser/gohtml.so` |
+| Linux arm64 | `parser-gohtml-linux-arm64.so` | `parser/gohtml.so` |
+| macOS Apple Silicon | `parser-gohtml-darwin-arm64.so` | `parser/gohtml.so` |
+| macOS Intel | `parser-gohtml-darwin-x86_64.so` | `parser/gohtml.so` |
+| Windows x86_64 | `parser-gohtml-windows-x86_64.dll` | `parser/gohtml.dll` |
+| Windows ARM64 | `parser-gohtml-windows-arm64.dll`（best-effort） | `parser/gohtml.dll` |
+
+同時會附 `SHA256SUMS`。
+
+最新版下載根路徑：
+
+`https://github.com/CarsonSlovoka/tree-sitter-gohtml/releases/latest/download/`
+
+指定版本把 `latest/download` 換成 `download/vX.Y.Z`。
+
+### Neovim 指令
+
+插件進 runtimepath 之後：
+
+```vim
+:TSInstallGohtml
+:TSInstallGohtml v0.1.0
+```
+
+會依 `uname` 選資產，寫入插件目錄的 `parser/gohtml.so`（Windows 為 `.dll`）。需要 `curl`。若 GitHub API 有速率限制，可設環境變數 `GITHUB_TOKEN` 或 `GH_TOKEN`。
+
+### 手動下載（Linux / macOS）
+
+把 `ASSET` 換成上表對應檔名：
+
+```bash
+mkdir -p ~/.local/share/nvim/site/parser
+curl -fsSL -o ~/.local/share/nvim/site/parser/gohtml.so \
+  https://github.com/CarsonSlovoka/tree-sitter-gohtml/releases/latest/download/ASSET
+```
+
+Linux x86_64 範例：
+
+```bash
+mkdir -p ~/.local/share/nvim/site/parser
+curl -fsSL -o ~/.local/share/nvim/site/parser/gohtml.so \
+  https://github.com/CarsonSlovoka/tree-sitter-gohtml/releases/latest/download/parser-gohtml-linux-x86_64.so
+```
+
+macOS Apple Silicon：
+
+```bash
+mkdir -p ~/.local/share/nvim/site/parser
+curl -fsSL -o ~/.local/share/nvim/site/parser/gohtml.so \
+  https://github.com/CarsonSlovoka/tree-sitter-gohtml/releases/latest/download/parser-gohtml-darwin-arm64.so
+```
+
+若 Gatekeeper 擋下載的 `.so`：
+
+```bash
+xattr -d com.apple.quarantine ~/.local/share/nvim/site/parser/gohtml.so
+```
+
+### 手動下載（Windows PowerShell）
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:LOCALAPPDATA\nvim-data\site\parser" | Out-Null
+Invoke-WebRequest -UseBasicParsing `
+  -Uri "https://github.com/CarsonSlovoka/tree-sitter-gohtml/releases/latest/download/parser-gohtml-windows-x86_64.dll" `
+  -OutFile "$env:LOCALAPPDATA\nvim-data\site\parser\gohtml.dll"
+```
+
+### 限制
+
+- Linux 資產在 Ubuntu glibc runner 上編譯。Alpine / musl 或其他過舊 glibc 請改用 `:TSBuildGohtml` / `make compile`
+- Windows ARM64 工作流程標為 best-effort；該 runner 若沒有可用的 C compiler，該資產可能缺席，請本機編譯
+- 預編譯 parser 對應本倉庫已提交的 `src/parser.c` 與 `src/tree_sitter/parser.h`，目標是 Neovim 0.12+
+
 ## 本機安裝（原生 packpath）
 
 ```bash
@@ -109,7 +195,7 @@ vim.api.nvim_create_autocmd("FileType", {
 :Inspect
 ```
 
-若尚未編譯 parser：`:TSBuildGohtml` 或 `make compile` 後重開 buffer
+若尚未有 parser：`:TSInstallGohtml`、`:TSBuildGohtml` 或 `make compile` 後重開 buffer
 
 ## 用 Neovim 0.12 `vim.pack` 安裝
 
@@ -119,7 +205,13 @@ vim.pack.add({
 })
 ```
 
-首次與更新後都要編譯
+首次與更新後需要 parser 二進位。優先抓 Release：
+
+```vim
+:TSInstallGohtml
+```
+
+沒有對應資產、或想自己編：
 
 ```vim
 :TSBuildGohtml
@@ -132,7 +224,21 @@ cd "$HOME/.local/share/nvim/site/pack/core/opt/tree-sitter-gohtml"
 make compile
 ```
 
-然後 `:restart`。更新用 `vim.pack.update()` 後再編譯一次
+然後 `:restart`。`vim.pack.update()` 之後若 grammar 有改，再跑一次 `:TSInstallGohtml` 或 `:TSBuildGohtml`
+
+## GitHub Actions
+
+- `.github/workflows/ci.yml`：push / PR 跑 `tree-sitter generate` 是否與已提交 `src/` 一致、`make test`、`make highlight-check`、本機編譯
+- `.github/workflows/release.yml`：推送符合 `v*.*.*` 的 tag（或在 Actions 手動指定既有 tag）時建立 GitHub Release，並上傳各平台動態連結庫與 `SHA256SUMS`
+
+發版：
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+需要 `contents: write`（預設 `GITHUB_TOKEN` 在同倉庫 Release 足夠）。Linux arm64 使用 `ubuntu-24.04-arm`（public repo 的標準 ARM runner）
 
 ## 選擇性副檔名
 

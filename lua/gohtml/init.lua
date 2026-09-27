@@ -47,7 +47,7 @@ function M.start(bufnr)
     return true
   end
   vim.notify(
-    'gohtml: parser not found. Build it with :TSBuildGohtml or `make compile` and put parser/gohtml.so on runtimepath.',
+    'gohtml: parser not found. Download with :TSInstallGohtml, or build with :TSBuildGohtml / `make compile`.',
     vim.log.levels.WARN
   )
   return false
