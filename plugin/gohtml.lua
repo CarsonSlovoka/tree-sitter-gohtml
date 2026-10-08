@@ -10,7 +10,7 @@ end
 
 vim.treesitter.language.register('gohtml', 'gohtml')
 
-print("gohtml apply_globals")
+-- Note: 當使用: vim.cmd.packadd("tree-sitter-gohtml") 那麼這個目錄中的內容也會自動執行
 require('gohtml').apply_globals()
 
 vim.api.nvim_create_user_command('TSBuildGohtml', function()
